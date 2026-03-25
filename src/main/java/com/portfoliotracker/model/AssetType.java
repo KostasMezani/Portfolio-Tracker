@@ -1,4 +1,6 @@
 package com.portfoliotracker.model;
 
-public class AssetType {
+public enum AssetType {
+    STOCK,
+    CRYPTO
 }

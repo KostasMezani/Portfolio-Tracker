@@ -1,4 +1,6 @@
 package com.portfoliotracker.model;
 
-public class TransactionType {
+public enum TransactionType {
+    BUY,
+    SELL
 }
