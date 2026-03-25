@@ -1,0 +1,22 @@
+# Compiled files
+target/
+*.class
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Maven
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# App data
+data/
+*.json
