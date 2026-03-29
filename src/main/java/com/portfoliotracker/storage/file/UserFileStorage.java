@@ -29,9 +29,9 @@ public class UserFileStorage {
      */
     public void saveAll(List<User> users) {
         try {
-            // Δημιούργησε το directory αν δεν υπάρχει
+            // Create the directory if it doesn't exist'
             Files.createDirectories(Path.of("data"));
-            // Μετέτρεψε τη λίστα σε JSON και γράψε στο αρχείο
+            // Convert the list to JSON and write to the file
             String json = gson.toJson(users);
             Files.writeString(Path.of(FILE_PATH), json);
         } catch (IOException e) {
@@ -46,7 +46,7 @@ public class UserFileStorage {
     public List<User> loadAll() {
         try {
             Path path = Path.of(FILE_PATH);
-            // Αν δεν υπάρχει το αρχείο, επέστρεψε κενή λίστα
+            // If the file does not exist, return an empty list.
             if (!Files.exists(path)) {
                 return new ArrayList<>();
             }
