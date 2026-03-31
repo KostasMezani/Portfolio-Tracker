@@ -85,6 +85,14 @@ public class TransactionService {
     }
 
     /**
+     * Deletes a transaction by id
+     * @param transactionId the id of the transaction to delete
+     */
+    public void deleteTransaction(String transactionId) {
+        transactionRepository.delete(transactionId);
+    }
+
+    /**
      * Returns all transactions for a specific user and type
      * @param userId the id of the user
      * @param type the type of the asset
