@@ -3,9 +3,7 @@ package com.portfoliotracker.controller;
 import com.portfoliotracker.model.PriceSnapshot;
 import com.portfoliotracker.model.User;
 import com.portfoliotracker.model.WatchlistItem;
-import com.portfoliotracker.service.AuthService;
-import com.portfoliotracker.service.MarketDataService;
-import com.portfoliotracker.service.WatchlistService;
+import com.portfoliotracker.service.*;
 import com.portfoliotracker.util.CurrencyUtils;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -25,20 +23,46 @@ public class WatchlistController {
     private final WatchlistService watchlistService;
     private final MarketDataService marketDataService;
     private final AuthService authService;
+    private final PortfolioService portfolioService;
+    private final TransactionService transactionService;
+    private final AlertService alertService;
 
     private TableView<WatchlistItem> watchlistTable;
 
+    /**
+     * Constructs a WatchlistController with the authenticated user and all required services.
+     *
+     * @param stage              the primary JavaFX stage used to switch scenes
+     * @param currentUser        the currently authenticated user
+     * @param watchlistService   service for adding, removing, and retrieving watchlist items
+     * @param marketDataService  service for fetching live asset prices and snapshots
+     * @param authService        service responsible for authentication logic
+     * @param portfolioService   service for portfolio-related operations
+     * @param transactionService service for transaction-related operations
+     * @param alertService       service for alert management
+     */
     public WatchlistController(Stage stage, User currentUser,
                                WatchlistService watchlistService,
                                MarketDataService marketDataService,
-                               AuthService authService) {
+                               AuthService authService,
+                               PortfolioService portfolioService,
+                               TransactionService transactionService,
+                               AlertService alertService) {
         this.stage = stage;
         this.currentUser = currentUser;
         this.watchlistService = watchlistService;
         this.marketDataService = marketDataService;
         this.authService = authService;
+        this.portfolioService = portfolioService;
+        this.transactionService = transactionService;
+        this.alertService = alertService;
     }
 
+    /**
+     * Builds and returns the watchlist {@link Scene} composed of a sidebar and main content area.
+     *
+     * @return the JavaFX Scene for the watchlist screen
+     */
     public Scene createScene() {
         BorderPane mainLayout = new BorderPane();
         mainLayout.setLeft(createSidebar());
@@ -46,6 +70,12 @@ public class WatchlistController {
         return new Scene(mainLayout, 1100, 700);
     }
 
+    /**
+     * Creates the main content area including the page title, subtitle, add-asset input bar,
+     * and the watchlist table.
+     *
+     * @return a {@link VBox} containing the watchlist content
+     */
     private VBox createContent() {
         VBox content = new VBox(20);
         content.setPadding(new Insets(20));
@@ -56,7 +86,6 @@ public class WatchlistController {
         Label subtitleLabel = new Label("Track assets you are interested in");
         subtitleLabel.setTextFill(Color.GRAY);
 
-        // Add to watchlist
         HBox addBar = new HBox(10);
         TextField symbolField = new TextField();
         symbolField.setPromptText("Enter asset symbol e.g. bitcoin");
@@ -80,6 +109,12 @@ public class WatchlistController {
         return content;
     }
 
+    /**
+     * Creates the watchlist {@link TableView} with columns for asset symbol, current price,
+     * 24-hour price change, and a remove action button per row.
+     *
+     * @return a configured {@link TableView} for displaying watchlist items
+     */
     private TableView<WatchlistItem> createWatchlistTable() {
         TableView<WatchlistItem> table = new TableView<>();
 
@@ -112,7 +147,6 @@ public class WatchlistController {
             }
         });
 
-        // Remove button
         TableColumn<WatchlistItem, Void> actionCol = new TableColumn<>("Action");
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button removeBtn = new Button("Remove");
@@ -135,12 +169,21 @@ public class WatchlistController {
         return table;
     }
 
+    /**
+     * Clears and reloads the watchlist table with all items tracked by the current user.
+     */
     private void loadWatchlist() {
         watchlistTable.getItems().clear();
         List<WatchlistItem> items = watchlistService.getWatchlist(currentUser.getId());
         watchlistTable.getItems().addAll(items);
     }
 
+    /**
+     * Creates the navigation sidebar containing buttons for all main application views
+     * and a logout button anchored at the bottom.
+     *
+     * @return a {@link VBox} representing the sidebar
+     */
     private VBox createSidebar() {
         VBox sidebar = new VBox(10);
         sidebar.setPrefWidth(200);
@@ -157,6 +200,11 @@ public class WatchlistController {
         Button holdingsBtn = createSidebarButton("Holdings");
         Button watchlistBtn = createSidebarButton("Watchlist");
 
+        dashboardBtn.setOnAction(e -> navigateToDashboard());
+        transactionsBtn.setOnAction(e -> navigateToTransactions());
+        addTransactionBtn.setOnAction(e -> navigateToAddTransaction());
+        holdingsBtn.setOnAction(e -> navigateToHoldings());
+
         Button logoutBtn = new Button("Logout");
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
         logoutBtn.setOnAction(e -> handleLogout());
@@ -172,6 +220,12 @@ public class WatchlistController {
         return sidebar;
     }
 
+    /**
+     * Creates a styled sidebar navigation button that spans the full width of the sidebar.
+     *
+     * @param text the label text to display on the button
+     * @return a styled {@link Button} for use in the sidebar
+     */
     private Button createSidebarButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
@@ -179,8 +233,60 @@ public class WatchlistController {
         return btn;
     }
 
+    /**
+     * Navigates to the Dashboard screen by replacing the current scene.
+     */
+    private void navigateToDashboard() {
+        DashboardController controller = new DashboardController(
+                stage, currentUser, portfolioService, authService,
+                transactionService, marketDataService, watchlistService, alertService
+        );
+        stage.setScene(controller.createScene());
+    }
+
+    /**
+     * Navigates to the Transactions screen by replacing the current scene.
+     */
+    private void navigateToTransactions() {
+        TransactionsController controller = new TransactionsController(
+                stage, currentUser, transactionService, authService,
+                portfolioService, marketDataService, watchlistService, alertService
+        );
+        stage.setScene(controller.createScene());
+    }
+
+    /**
+     * Navigates to the Add Transaction screen by replacing the current scene.
+     */
+    private void navigateToAddTransaction() {
+        AddTransactionController controller = new AddTransactionController(
+                stage, currentUser, transactionService, marketDataService,
+                authService, portfolioService, watchlistService, alertService
+        );
+        stage.setScene(controller.createScene());
+    }
+
+    /**
+     * Navigates to the Holdings screen by replacing the current scene.
+     */
+    private void navigateToHoldings() {
+        HoldingsController controller = new HoldingsController(
+                stage, currentUser, portfolioService, authService,
+                transactionService, marketDataService, watchlistService, alertService
+        );
+        stage.setScene(controller.createScene());
+    }
+
+    /**
+     * Handles the Logout button click event. Clears the current session and navigates
+     * back to the Login screen.
+     */
     private void handleLogout() {
-        LoginController loginController = new LoginController(stage, authService);
+        LoginController loginController = new LoginController(
+                stage, authService, portfolioService,
+                transactionService, marketDataService,
+                watchlistService, alertService
+        );
         stage.setScene(loginController.createScene());
     }
 }

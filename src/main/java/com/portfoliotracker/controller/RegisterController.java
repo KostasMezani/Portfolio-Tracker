@@ -1,7 +1,7 @@
 package com.portfoliotracker.controller;
 
 import com.portfoliotracker.exception.ValidationException;
-import com.portfoliotracker.service.AuthService;
+import com.portfoliotracker.service.*;
 import com.portfoliotracker.util.ValidationUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,31 +15,55 @@ import javafx.stage.Stage;
 
 public class RegisterController {
 
-    private final AuthService authService;
     private final Stage stage;
+    private final AuthService authService;
+    private final PortfolioService portfolioService;
+    private final TransactionService transactionService;
+    private final MarketDataService marketDataService;
+    private final WatchlistService watchlistService;
+    private final AlertService alertService;
 
-    // UI Elements
     private TextField usernameField;
     private PasswordField passwordField;
     private PasswordField confirmPasswordField;
     private TextField emailField;
     private Label errorLabel;
 
-    public RegisterController(Stage stage, AuthService authService) {
+    /**
+     * Constructs a RegisterController with all required services and the primary stage.
+     *
+     * @param stage              the primary JavaFX stage used to switch scenes
+     * @param authService        service responsible for authentication and registration logic
+     * @param portfolioService   service for portfolio-related operations
+     * @param transactionService service for transaction-related operations
+     * @param marketDataService  service for fetching live market data
+     * @param watchlistService   service for watchlist management
+     * @param alertService       service for alert management
+     */
+    public RegisterController(Stage stage, AuthService authService,
+                              PortfolioService portfolioService,
+                              TransactionService transactionService,
+                              MarketDataService marketDataService,
+                              WatchlistService watchlistService,
+                              AlertService alertService) {
         this.stage = stage;
         this.authService = authService;
+        this.portfolioService = portfolioService;
+        this.transactionService = transactionService;
+        this.marketDataService = marketDataService;
+        this.watchlistService = watchlistService;
+        this.alertService = alertService;
     }
 
     /**
-     * Creates and returns the Register Scene
-     * @return the register scene
+     * Builds and returns the registration {@link Scene} containing the sign-up form.
+     *
+     * @return the JavaFX Scene for the registration screen
      */
     public Scene createScene() {
-        // Title
         Label titleLabel = new Label("Create an Account");
         titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
 
-        // Fields
         usernameField = new TextField();
         usernameField.setPromptText("Enter your username");
         usernameField.setMaxWidth(300);
@@ -56,21 +80,17 @@ public class RegisterController {
         emailField.setPromptText("Enter your email");
         emailField.setMaxWidth(300);
 
-        // Error label
         errorLabel = new Label();
         errorLabel.setTextFill(Color.RED);
         errorLabel.setVisible(false);
 
-        // Register button
         Button registerButton = new Button("Register");
         registerButton.setMaxWidth(300);
         registerButton.setOnAction(e -> handleRegister());
 
-        // Back to login link
         Hyperlink loginLink = new Hyperlink("Back to Login");
         loginLink.setOnAction(e -> navigateToLogin());
 
-        // Layout
         VBox layout = new VBox(15);
         layout.setAlignment(Pos.CENTER);
         layout.setPadding(new Insets(40));
@@ -89,7 +109,9 @@ public class RegisterController {
     }
 
     /**
-     * Handles register button click
+     * Handles the Register button click event. Validates all form fields and,
+     * if valid, delegates registration to {@link com.portfoliotracker.service.AuthService}.
+     * Navigates to the login screen on success, or displays an error message on failure.
      */
     private void handleRegister() {
         String username = usernameField.getText().trim();
@@ -97,7 +119,6 @@ public class RegisterController {
         String confirmPassword = confirmPasswordField.getText().trim();
         String email = emailField.getText().trim();
 
-        // Validate fields
         if (!ValidationUtils.isNotEmpty(username) ||
                 !ValidationUtils.isNotEmpty(password) ||
                 !ValidationUtils.isNotEmpty(email)) {
@@ -105,13 +126,11 @@ public class RegisterController {
             return;
         }
 
-        // Check passwords match
         if (!ValidationUtils.passwordsMatch(password, confirmPassword)) {
             showError("Passwords do not match");
             return;
         }
 
-        // Check email format
         if (!ValidationUtils.isValidEmail(email)) {
             showError("Invalid email format");
             return;
@@ -126,7 +145,9 @@ public class RegisterController {
     }
 
     /**
-     * Shows error message
+     * Displays an error message in the error label, making it visible to the user.
+     *
+     * @param message the error message to display
      */
     private void showError(String message) {
         errorLabel.setText(message);
@@ -134,10 +155,14 @@ public class RegisterController {
     }
 
     /**
-     * Navigates back to Login screen
+     * Navigates back to the Login screen by replacing the current scene.
      */
     private void navigateToLogin() {
-        LoginController loginController = new LoginController(stage, authService);
+        LoginController loginController = new LoginController(
+                stage, authService, portfolioService,
+                transactionService, marketDataService,
+                watchlistService, alertService
+        );
         stage.setScene(loginController.createScene());
     }
 }
