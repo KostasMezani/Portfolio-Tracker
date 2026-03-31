@@ -1,13 +1,13 @@
 package com.portfoliotracker.storage.file;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +22,12 @@ public abstract class JsonFileStorage<T> {
         this.type = type;
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
+                .registerTypeAdapter(LocalDateTime.class,
+                        (JsonSerializer<LocalDateTime>) (src, typeOfSrc, context) ->
+                                new JsonPrimitive(src.toString()))
+                .registerTypeAdapter(LocalDateTime.class,
+                        (JsonDeserializer<LocalDateTime>) (json, typeOfT, context) ->
+                                LocalDateTime.parse(json.getAsString()))
                 .create();
     }
 
