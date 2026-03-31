@@ -14,6 +14,11 @@ public class WatchlistRepository {
         this.watchlistFileStorage = watchlistFileStorage;
     }
 
+    /**
+     * Saves a watchlist item
+     * @param watchlistItem the watchlist item to save
+     * @return the saved watchlist item
+     */
     public WatchlistItem save(WatchlistItem watchlistItem) {
         List<WatchlistItem> items = watchlistFileStorage.loadAll();
 
@@ -25,6 +30,11 @@ public class WatchlistRepository {
         return watchlistItem;
     }
 
+    /**
+     * Finds all watchlist items for a user
+     * @param userId the id of the user
+     * @return the list of watchlist items
+     */
     public List<WatchlistItem> findByUserId(String userId) {
         List<WatchlistItem> items = watchlistFileStorage.loadAll();
         return items.stream()
@@ -32,6 +42,11 @@ public class WatchlistRepository {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Deletes a watchlist item by user id and symbol
+     * @param userId the id of the user
+     * @param symbol the symbol of the asset
+     */
     public void deleteByUserIdAndSymbol(String userId, String symbol) {
         List<WatchlistItem> items = watchlistFileStorage.loadAll();
         items.removeIf(item -> item.getUserId().equals(userId)
@@ -39,6 +54,10 @@ public class WatchlistRepository {
         watchlistFileStorage.saveAll(items);
     }
 
+    /**
+     * Finds all watchlist items
+     * @return the list of watchlist items
+     */
     public List<WatchlistItem> findAll() {
         return watchlistFileStorage.loadAll();
     }
