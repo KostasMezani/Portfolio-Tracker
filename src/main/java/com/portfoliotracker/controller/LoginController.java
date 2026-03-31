@@ -1,7 +1,7 @@
 package com.portfoliotracker.controller;
 
 import com.portfoliotracker.model.User;
-import com.portfoliotracker.service.AuthService;
+import com.portfoliotracker.service.*;
 import com.portfoliotracker.exception.AuthenticationException;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -17,20 +17,47 @@ public class LoginController {
 
     private final AuthService authService;
     private final Stage stage;
+    private final PortfolioService portfolioService;
+    private final TransactionService transactionService;
+    private final MarketDataService marketDataService;
+    private final WatchlistService watchlistService;
+    private final AlertService alertService;
 
     // UI Elements
     private TextField usernameField;
     private PasswordField passwordField;
     private Label errorLabel;
 
-    public LoginController(Stage stage, AuthService authService) {
+    /**
+     * Constructs a LoginController with all required services and the primary stage.
+     *
+     * @param stage              the primary JavaFX stage used to switch scenes
+     * @param authService        service responsible for authentication logic
+     * @param portfolioService   service for portfolio-related operations
+     * @param transactionService service for transaction-related operations
+     * @param marketDataService  service for fetching live market data
+     * @param watchlistService   service for watchlist management
+     * @param alertService       service for alert management
+     */
+    public LoginController(Stage stage, AuthService authService,
+                           PortfolioService portfolioService,
+                           TransactionService transactionService,
+                           MarketDataService marketDataService,
+                           WatchlistService watchlistService,
+                           AlertService alertService) {
         this.stage = stage;
         this.authService = authService;
+        this.portfolioService = portfolioService;
+        this.transactionService = transactionService;
+        this.marketDataService = marketDataService;
+        this.watchlistService = watchlistService;
+        this.alertService = alertService;
     }
 
     /**
-     * Creates and returns the Login Scene
-     * @return the login scene
+     * Builds and returns the login {@link Scene} containing the username/password form.
+     *
+     * @return the JavaFX Scene for the login screen
      */
     public Scene createScene() {
         // Title
@@ -84,7 +111,9 @@ public class LoginController {
     }
 
     /**
-     * Handles login button click
+     * Handles the Login button click event. Validates the username and password fields,
+     * delegates authentication to {@link com.portfoliotracker.service.AuthService},
+     * and navigates to the Dashboard on success or shows an error on failure.
      */
     private void handleLogin() {
         String username = usernameField.getText().trim();
@@ -105,7 +134,9 @@ public class LoginController {
     }
 
     /**
-     * Shows error message
+     * Displays an error message in the error label, making it visible to the user.
+     *
+     * @param message the error message to display
      */
     private void showError(String message) {
         errorLabel.setText(message);
@@ -113,17 +144,28 @@ public class LoginController {
     }
 
     /**
-     * Navigates to Register screen
+     * Navigates to the Register screen by replacing the current scene.
      */
     private void navigateToRegister() {
-        RegisterController registerController = new RegisterController(stage, authService);
+        RegisterController registerController = new RegisterController(
+                stage, authService, portfolioService,
+                transactionService, marketDataService,
+                watchlistService, alertService
+        );
         stage.setScene(registerController.createScene());
     }
 
     /**
-     * Navigates to Dashboard
+     * Navigates to the Dashboard screen for the authenticated user.
+     *
+     * @param user the authenticated {@link User} whose data will be displayed
      */
     private void navigateToDashboard(User user) {
-        // TODO: θα υλοποιηθεί όταν φτιάξουμε το DashboardController
+        DashboardController dashboardController = new DashboardController(
+                stage, user, portfolioService, authService,
+                transactionService, marketDataService,
+                watchlistService, alertService
+        );
+        stage.setScene(dashboardController.createScene());
     }
 }
