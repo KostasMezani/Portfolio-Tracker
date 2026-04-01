@@ -39,7 +39,7 @@ public class CalculationService {
                 : BigDecimal.ZERO;
 
         Asset asset = new Asset(symbol, symbol, null);
-        return new Holding(asset, totalQuantity, avgPrice, BigDecimal.ZERO,  BigDecimal.ZERO);
+        return new Holding(asset, totalQuantity, avgPrice, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 
     /**
