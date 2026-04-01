@@ -9,9 +9,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -31,15 +28,6 @@ public class WatchlistController {
 
     /**
      * Constructs a WatchlistController with the authenticated user and all required services.
-     *
-     * @param stage              the primary JavaFX stage used to switch scenes
-     * @param currentUser        the currently authenticated user
-     * @param watchlistService   service for adding, removing, and retrieving watchlist items
-     * @param marketDataService  service for fetching live asset prices and snapshots
-     * @param authService        service responsible for authentication logic
-     * @param portfolioService   service for portfolio-related operations
-     * @param transactionService service for transaction-related operations
-     * @param alertService       service for alert management
      */
     public WatchlistController(Stage stage, User currentUser,
                                WatchlistService watchlistService,
@@ -58,38 +46,45 @@ public class WatchlistController {
         this.alertService = alertService;
     }
 
+    private void applyStylesheet(Scene scene) {
+        scene.getStylesheets().add(
+                getClass().getResource("/style.css").toExternalForm()
+        );
+    }
+
     /**
-     * Builds and returns the watchlist {@link Scene} composed of a sidebar and main content area.
-     *
-     * @return the JavaFX Scene for the watchlist screen
+     * Builds and returns the watchlist {@link Scene}.
      */
     public Scene createScene() {
         BorderPane mainLayout = new BorderPane();
         mainLayout.setLeft(createSidebar());
         mainLayout.setCenter(createContent());
-        return new Scene(mainLayout, 1100, 700);
+
+        Scene scene = new Scene(mainLayout, 1100, 700);
+        applyStylesheet(scene);
+        return scene;
     }
 
     /**
-     * Creates the main content area including the page title, subtitle, add-asset input bar,
-     * and the watchlist table.
-     *
-     * @return a {@link VBox} containing the watchlist content
+     * Creates the main content area.
      */
     private VBox createContent() {
         VBox content = new VBox(20);
         content.setPadding(new Insets(20));
 
         Label titleLabel = new Label("Watchlist");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.getStyleClass().add("title-label");
 
         Label subtitleLabel = new Label("Track assets you are interested in");
-        subtitleLabel.setTextFill(Color.GRAY);
+        subtitleLabel.getStyleClass().add("subtitle-label");
 
         HBox addBar = new HBox(10);
         TextField symbolField = new TextField();
         symbolField.setPromptText("Enter asset symbol e.g. bitcoin");
+        symbolField.setPrefWidth(300);
+
         Button addBtn = new Button("Add to Watchlist");
+        addBtn.getStyleClass().add("primary-button");
         addBtn.setOnAction(e -> {
             String symbol = symbolField.getText().trim();
             if (!symbol.isEmpty()) {
@@ -110,13 +105,11 @@ public class WatchlistController {
     }
 
     /**
-     * Creates the watchlist {@link TableView} with columns for asset symbol, current price,
-     * 24-hour price change, and a remove action button per row.
-     *
-     * @return a configured {@link TableView} for displaying watchlist items
+     * Creates the watchlist {@link TableView}.
      */
     private TableView<WatchlistItem> createWatchlistTable() {
         TableView<WatchlistItem> table = new TableView<>();
+        table.getStyleClass().add("table-view");
 
         TableColumn<WatchlistItem, String> assetCol = new TableColumn<>("Asset");
         assetCol.setCellValueFactory(data ->
@@ -151,6 +144,7 @@ public class WatchlistController {
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button removeBtn = new Button("Remove");
             {
+                removeBtn.getStyleClass().add("danger-button");
                 removeBtn.setOnAction(e -> {
                     WatchlistItem item = getTableView().getItems().get(getIndex());
                     watchlistService.removeFromWatchlist(
@@ -170,7 +164,7 @@ public class WatchlistController {
     }
 
     /**
-     * Clears and reloads the watchlist table with all items tracked by the current user.
+     * Clears and reloads the watchlist table.
      */
     private void loadWatchlist() {
         watchlistTable.getItems().clear();
@@ -179,20 +173,16 @@ public class WatchlistController {
     }
 
     /**
-     * Creates the navigation sidebar containing buttons for all main application views
-     * and a logout button anchored at the bottom.
-     *
-     * @return a {@link VBox} representing the sidebar
+     * Creates the navigation sidebar.
      */
     private VBox createSidebar() {
         VBox sidebar = new VBox(10);
         sidebar.setPrefWidth(200);
         sidebar.setPadding(new Insets(20));
-        sidebar.setStyle("-fx-background-color: #1a2942;");
+        sidebar.getStyleClass().add("sidebar");
 
         Label appTitle = new Label("Portfolio Tracker");
-        appTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        appTitle.setTextFill(Color.WHITE);
+        appTitle.getStyleClass().add("sidebar-title");
 
         Button dashboardBtn = createSidebarButton("Dashboard");
         Button transactionsBtn = createSidebarButton("Transactions");
@@ -207,6 +197,7 @@ public class WatchlistController {
 
         Button logoutBtn = new Button("Logout");
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
+        logoutBtn.getStyleClass().add("logout-button");
         logoutBtn.setOnAction(e -> handleLogout());
 
         Region spacer = new Region();
@@ -221,21 +212,15 @@ public class WatchlistController {
     }
 
     /**
-     * Creates a styled sidebar navigation button that spans the full width of the sidebar.
-     *
-     * @param text the label text to display on the button
-     * @return a styled {@link Button} for use in the sidebar
+     * Creates a styled sidebar button.
      */
     private Button createSidebarButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
+        btn.getStyleClass().add("sidebar-button");
         return btn;
     }
 
-    /**
-     * Navigates to the Dashboard screen by replacing the current scene.
-     */
     private void navigateToDashboard() {
         DashboardController controller = new DashboardController(
                 stage, currentUser, portfolioService, authService,
@@ -244,9 +229,6 @@ public class WatchlistController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Transactions screen by replacing the current scene.
-     */
     private void navigateToTransactions() {
         TransactionsController controller = new TransactionsController(
                 stage, currentUser, transactionService, authService,
@@ -255,9 +237,6 @@ public class WatchlistController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Add Transaction screen by replacing the current scene.
-     */
     private void navigateToAddTransaction() {
         AddTransactionController controller = new AddTransactionController(
                 stage, currentUser, transactionService, marketDataService,
@@ -266,9 +245,6 @@ public class WatchlistController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Holdings screen by replacing the current scene.
-     */
     private void navigateToHoldings() {
         HoldingsController controller = new HoldingsController(
                 stage, currentUser, portfolioService, authService,
@@ -277,10 +253,6 @@ public class WatchlistController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Handles the Logout button click event. Clears the current session and navigates
-     * back to the Login screen.
-     */
     private void handleLogout() {
         LoginController loginController = new LoginController(
                 stage, authService, portfolioService,

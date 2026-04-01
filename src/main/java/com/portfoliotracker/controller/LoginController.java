@@ -8,9 +8,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class LoginController {
@@ -54,6 +51,12 @@ public class LoginController {
         this.alertService = alertService;
     }
 
+    private void applyStylesheet(Scene scene) {
+        scene.getStylesheets().add(
+                getClass().getResource("/style.css").toExternalForm()
+        );
+    }
+
     /**
      * Builds and returns the login {@link Scene} containing the username/password form.
      *
@@ -62,32 +65,32 @@ public class LoginController {
     public Scene createScene() {
         // Title
         Label titleLabel = new Label("Portfolio Tracker");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.getStyleClass().add("login-title");
 
         // Username field
         Label usernameLabel = new Label("Username:");
-        usernameLabel.setTextFill(Color.WHITE);
+        usernameLabel.getStyleClass().add("subtitle-label");
         usernameField = new TextField();
         usernameField.setPromptText("Enter your username");
         usernameField.setMaxWidth(300);
 
         // Password field
         Label passwordLabel = new Label("Password:");
-        passwordLabel.setTextFill(Color.WHITE);
+        passwordLabel.getStyleClass().add("subtitle-label");
         passwordField = new PasswordField();
         passwordField.setPromptText("Enter your password");
         passwordField.setMaxWidth(300);
 
         // Error label
         errorLabel = new Label();
-        errorLabel.setTextFill(Color.RED);
         errorLabel.setVisible(false);
+        errorLabel.getStyleClass().add("error-label");
 
         // Login button
         Button loginButton = new Button("Login");
         loginButton.setMaxWidth(300);
         loginButton.setOnAction(e -> handleLogin());
+        loginButton.getStyleClass().add("primary-button");
 
         // Register link
         Hyperlink registerLink = new Hyperlink("Don't have an account? Register here");
@@ -105,9 +108,11 @@ public class LoginController {
                 loginButton,
                 registerLink
         );
-        layout.setStyle("-fx-background-color: #1a2942;");
+        layout.getStyleClass().add("login-container");
 
-        return new Scene(layout, 800, 600);
+        Scene scene = new Scene(layout, 800, 600);
+        applyStylesheet(scene);
+        return scene;
     }
 
     /**
