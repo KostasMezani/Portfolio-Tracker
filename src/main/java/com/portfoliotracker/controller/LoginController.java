@@ -26,7 +26,7 @@ public class LoginController {
     private Label errorLabel;
 
     /**
-     * Constructs a LoginController with all required services and the primary stage.
+     * Constructs a Login Controller with all required services and the primary stage.
      *
      * @param stage              the primary JavaFX stage used to switch scenes
      * @param authService        service responsible for authentication logic
@@ -71,6 +71,7 @@ public class LoginController {
         Label usernameLabel = new Label("Username:");
         usernameLabel.getStyleClass().add("subtitle-label");
         usernameField = new TextField();
+        usernameField.setOnAction(e ->passwordField.requestFocus());
         usernameField.setPromptText("Enter your username");
         usernameField.setMaxWidth(300);
 
@@ -78,6 +79,7 @@ public class LoginController {
         Label passwordLabel = new Label("Password:");
         passwordLabel.getStyleClass().add("subtitle-label");
         passwordField = new PasswordField();
+        passwordField.setOnAction(e -> handleLogin());
         passwordField.setPromptText("Enter your password");
         passwordField.setMaxWidth(300);
 
