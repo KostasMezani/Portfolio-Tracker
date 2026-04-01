@@ -8,9 +8,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class RegisterController {
@@ -31,14 +28,6 @@ public class RegisterController {
 
     /**
      * Constructs a RegisterController with all required services and the primary stage.
-     *
-     * @param stage              the primary JavaFX stage used to switch scenes
-     * @param authService        service responsible for authentication and registration logic
-     * @param portfolioService   service for portfolio-related operations
-     * @param transactionService service for transaction-related operations
-     * @param marketDataService  service for fetching live market data
-     * @param watchlistService   service for watchlist management
-     * @param alertService       service for alert management
      */
     public RegisterController(Stage stage, AuthService authService,
                               PortfolioService portfolioService,
@@ -55,14 +44,18 @@ public class RegisterController {
         this.alertService = alertService;
     }
 
+    private void applyStylesheet(Scene scene) {
+        scene.getStylesheets().add(
+                getClass().getResource("/style.css").toExternalForm()
+        );
+    }
+
     /**
-     * Builds and returns the registration {@link Scene} containing the sign-up form.
-     *
-     * @return the JavaFX Scene for the registration screen
+     * Builds and returns the registration {@link Scene}.
      */
     public Scene createScene() {
         Label titleLabel = new Label("Create an Account");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.getStyleClass().add("login-title");
 
         usernameField = new TextField();
         usernameField.setPromptText("Enter your username");
@@ -81,11 +74,12 @@ public class RegisterController {
         emailField.setMaxWidth(300);
 
         errorLabel = new Label();
-        errorLabel.setTextFill(Color.RED);
+        errorLabel.getStyleClass().add("error-label");
         errorLabel.setVisible(false);
 
         Button registerButton = new Button("Register");
         registerButton.setMaxWidth(300);
+        registerButton.getStyleClass().add("primary-button");
         registerButton.setOnAction(e -> handleRegister());
 
         Hyperlink loginLink = new Hyperlink("Back to Login");
@@ -104,14 +98,15 @@ public class RegisterController {
                 registerButton,
                 loginLink
         );
+        layout.getStyleClass().add("login-container");
 
-        return new Scene(layout, 800, 600);
+        Scene scene = new Scene(layout, 800, 600);
+        applyStylesheet(scene);
+        return scene;
     }
 
     /**
-     * Handles the Register button click event. Validates all form fields and,
-     * if valid, delegates registration to {@link com.portfoliotracker.service.AuthService}.
-     * Navigates to the login screen on success, or displays an error message on failure.
+     * Handles the Register button click event.
      */
     private void handleRegister() {
         String username = usernameField.getText().trim();
@@ -145,9 +140,7 @@ public class RegisterController {
     }
 
     /**
-     * Displays an error message in the error label, making it visible to the user.
-     *
-     * @param message the error message to display
+     * Displays an error message.
      */
     private void showError(String message) {
         errorLabel.setText(message);
@@ -155,7 +148,7 @@ public class RegisterController {
     }
 
     /**
-     * Navigates back to the Login screen by replacing the current scene.
+     * Navigates back to the Login screen.
      */
     private void navigateToLogin() {
         LoginController loginController = new LoginController(

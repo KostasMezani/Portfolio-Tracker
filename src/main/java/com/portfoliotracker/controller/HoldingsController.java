@@ -8,9 +8,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -28,15 +25,6 @@ public class HoldingsController {
 
     /**
      * Constructs a HoldingsController with the authenticated user and all required services.
-     *
-     * @param stage              the primary JavaFX stage used to switch scenes
-     * @param currentUser        the currently authenticated user
-     * @param portfolioService   service for retrieving and calculating holdings data
-     * @param authService        service responsible for authentication logic
-     * @param transactionService service for transaction-related operations
-     * @param marketDataService  service for fetching live market data
-     * @param watchlistService   service for watchlist management
-     * @param alertService       service for alert management
      */
     public HoldingsController(Stage stage, User currentUser,
                               PortfolioService portfolioService,
@@ -55,32 +43,37 @@ public class HoldingsController {
         this.alertService = alertService;
     }
 
+    private void applyStylesheet(Scene scene) {
+        scene.getStylesheets().add(
+                getClass().getResource("/style.css").toExternalForm()
+        );
+    }
+
     /**
-     * Builds and returns the holdings {@link Scene} composed of a sidebar and main content area.
-     *
-     * @return the JavaFX Scene for the holdings screen
+     * Builds and returns the holdings {@link Scene}.
      */
     public Scene createScene() {
         BorderPane mainLayout = new BorderPane();
         mainLayout.setLeft(createSidebar());
         mainLayout.setCenter(createContent());
-        return new Scene(mainLayout, 1100, 700);
+
+        Scene scene = new Scene(mainLayout, 1100, 700);
+        applyStylesheet(scene);
+        return scene;
     }
 
     /**
-     * Creates the main content area showing the page title, subtitle, and holdings table.
-     *
-     * @return a {@link VBox} containing the holdings content
+     * Creates the main content area.
      */
     private VBox createContent() {
         VBox content = new VBox(20);
         content.setPadding(new Insets(20));
 
         Label titleLabel = new Label("Holdings");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.getStyleClass().add("title-label");
 
         Label subtitleLabel = new Label("Track your current assets and performance");
-        subtitleLabel.setTextFill(Color.GRAY);
+        subtitleLabel.getStyleClass().add("subtitle-label");
 
         TableView<Holding> holdingsTable = createHoldingsTable();
 
@@ -89,13 +82,11 @@ public class HoldingsController {
     }
 
     /**
-     * Creates and populates the holdings {@link TableView} with the current user's positions,
-     * showing asset symbol, quantity, average buy price, current price, and profit/loss columns.
-     *
-     * @return a {@link TableView} populated with the user's holdings
+     * Creates and populates the holdings {@link TableView}.
      */
     private TableView<Holding> createHoldingsTable() {
         TableView<Holding> table = new TableView<>();
+        table.getStyleClass().add("table-view");
 
         TableColumn<Holding, String> assetCol = new TableColumn<>("Asset");
         assetCol.setCellValueFactory(data ->
@@ -133,20 +124,16 @@ public class HoldingsController {
     }
 
     /**
-     * Creates the navigation sidebar containing buttons for all main application views
-     * and a logout button anchored at the bottom.
-     *
-     * @return a {@link VBox} representing the sidebar
+     * Creates the navigation sidebar.
      */
     private VBox createSidebar() {
         VBox sidebar = new VBox(10);
         sidebar.setPrefWidth(200);
         sidebar.setPadding(new Insets(20));
-        sidebar.setStyle("-fx-background-color: #1a2942;");
+        sidebar.getStyleClass().add("sidebar");
 
         Label appTitle = new Label("Portfolio Tracker");
-        appTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        appTitle.setTextFill(Color.WHITE);
+        appTitle.getStyleClass().add("sidebar-title");
 
         Button dashboardBtn = createSidebarButton("Dashboard");
         Button transactionsBtn = createSidebarButton("Transactions");
@@ -161,6 +148,7 @@ public class HoldingsController {
 
         Button logoutBtn = new Button("Logout");
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
+        logoutBtn.getStyleClass().add("logout-button");
         logoutBtn.setOnAction(e -> handleLogout());
 
         Region spacer = new Region();
@@ -175,21 +163,15 @@ public class HoldingsController {
     }
 
     /**
-     * Creates a styled sidebar navigation button that spans the full width of the sidebar.
-     *
-     * @param text the label text to display on the button
-     * @return a styled {@link Button} for use in the sidebar
+     * Creates a styled sidebar button.
      */
     private Button createSidebarButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
+        btn.getStyleClass().add("sidebar-button");
         return btn;
     }
 
-    /**
-     * Navigates to the Dashboard screen by replacing the current scene.
-     */
     private void navigateToDashboard() {
         DashboardController controller = new DashboardController(
                 stage, currentUser, portfolioService, authService,
@@ -198,9 +180,6 @@ public class HoldingsController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Transactions screen by replacing the current scene.
-     */
     private void navigateToTransactions() {
         TransactionsController controller = new TransactionsController(
                 stage, currentUser, transactionService, authService,
@@ -209,9 +188,6 @@ public class HoldingsController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Add Transaction screen by replacing the current scene.
-     */
     private void navigateToAddTransaction() {
         AddTransactionController controller = new AddTransactionController(
                 stage, currentUser, transactionService, marketDataService,
@@ -220,9 +196,6 @@ public class HoldingsController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Watchlist screen by replacing the current scene.
-     */
     private void navigateToWatchlist() {
         WatchlistController controller = new WatchlistController(
                 stage, currentUser, watchlistService, marketDataService,
@@ -231,10 +204,6 @@ public class HoldingsController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Handles the Logout button click event. Clears the current session and navigates
-     * back to the Login screen.
-     */
     private void handleLogout() {
         LoginController loginController = new LoginController(
                 stage, authService, portfolioService,

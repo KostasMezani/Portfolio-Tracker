@@ -9,9 +9,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -60,6 +57,12 @@ public class TransactionsController {
         this.alertService = alertService;
     }
 
+    private void applyStylesheet(Scene scene) {
+        scene.getStylesheets().add(
+                getClass().getResource("/style.css").toExternalForm()
+        );
+    }
+
     /**
      * Builds and returns the transactions {@link Scene} composed of a sidebar and main content area.
      *
@@ -69,7 +72,10 @@ public class TransactionsController {
         BorderPane mainLayout = new BorderPane();
         mainLayout.setLeft(createSidebar());
         mainLayout.setCenter(createContent());
-        return new Scene(mainLayout, 1100, 700);
+
+        Scene scene = new Scene(mainLayout, 1100, 700);
+        applyStylesheet(scene);
+        return scene;
     }
 
     /**
@@ -82,11 +88,10 @@ public class TransactionsController {
         VBox sidebar = new VBox(10);
         sidebar.setPrefWidth(200);
         sidebar.setPadding(new Insets(20));
-        sidebar.setStyle("-fx-background-color: #1a2942;");
+        sidebar.getStyleClass().add("sidebar");
 
         Label appTitle = new Label("Portfolio Tracker");
-        appTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        appTitle.setTextFill(Color.WHITE);
+        appTitle.getStyleClass().add("sidebar-title");
 
         Button dashboardBtn = createSidebarButton("Dashboard");
         Button transactionsBtn = createSidebarButton("Transactions");
@@ -101,6 +106,7 @@ public class TransactionsController {
 
         Button logoutBtn = new Button("Logout");
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
+        logoutBtn.getStyleClass().add("logout-button");
         logoutBtn.setOnAction(e -> handleLogout());
 
         Region spacer = new Region();
@@ -125,7 +131,7 @@ public class TransactionsController {
         content.setPadding(new Insets(20));
 
         Label titleLabel = new Label("Transactions");
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titleLabel.getStyleClass().add("title-label");
 
         HBox toolbar = new HBox(10);
         searchField = new TextField();
@@ -134,11 +140,13 @@ public class TransactionsController {
         searchField.setOnKeyTyped(e -> filterTransactions());
 
         filterComboBox = new ComboBox<>();
+        filterComboBox.setPrefWidth(120);
         filterComboBox.getItems().addAll("All Types", "BUY", "SELL");
         filterComboBox.setValue("All Types");
         filterComboBox.setOnAction(e -> filterTransactions());
 
         Button addBtn = new Button("+ Add Transaction");
+        addBtn.getStyleClass().add("primary-button");
         addBtn.setOnAction(e -> navigateToAddTransaction());
 
         toolbar.getChildren().addAll(searchField, filterComboBox, addBtn);
@@ -158,6 +166,7 @@ public class TransactionsController {
      */
     private TableView<Transaction> createTransactionsTable() {
         TableView<Transaction> table = new TableView<>();
+        table.getStyleClass().add("table-view");
 
         TableColumn<Transaction, String> dateCol = new TableColumn<>("Date");
         dateCol.setCellValueFactory(data ->
@@ -193,6 +202,7 @@ public class TransactionsController {
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button deleteBtn = new Button("Delete");
             {
+                deleteBtn.getStyleClass().add("danger-button");
                 deleteBtn.setOnAction(e -> {
                     Transaction t = getTableView().getItems().get(getIndex());
                     handleDelete(t);
@@ -243,8 +253,7 @@ public class TransactionsController {
     }
 
     /**
-     * Shows a confirmation dialog before deleting the given transaction. If the user
-     * confirms, the transaction is deleted and the table is refreshed.
+     * Shows a confirmation dialog before deleting the given transaction.
      *
      * @param transaction the {@link Transaction} to delete
      */
@@ -269,7 +278,7 @@ public class TransactionsController {
     private Button createSidebarButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
+        btn.getStyleClass().add("sidebar-button");
         return btn;
     }
 
@@ -318,8 +327,7 @@ public class TransactionsController {
     }
 
     /**
-     * Handles the Logout button click event. Clears the current session and navigates
-     * back to the Login screen.
+     * Handles the Logout button click event.
      */
     private void handleLogout() {
         LoginController loginController = new LoginController(

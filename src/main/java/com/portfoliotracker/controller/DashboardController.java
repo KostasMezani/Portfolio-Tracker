@@ -5,13 +5,9 @@ import com.portfoliotracker.model.User;
 import com.portfoliotracker.service.*;
 import com.portfoliotracker.util.CurrencyUtils;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
@@ -57,6 +53,12 @@ public class DashboardController {
         this.alertService = alertService;
     }
 
+    private void applyStylesheet(Scene scene) {
+        scene.getStylesheets().add(
+                getClass().getResource("/style.css").toExternalForm()
+        );
+    }
+
     /**
      * Builds and returns the dashboard {@link Scene} composed of a sidebar and main content area.
      *
@@ -66,7 +68,10 @@ public class DashboardController {
         BorderPane mainLayout = new BorderPane();
         mainLayout.setLeft(createSidebar());
         mainLayout.setCenter(createContent());
-        return new Scene(mainLayout, 1100, 700);
+
+        Scene scene = new Scene(mainLayout, 1100, 700);
+        applyStylesheet(scene);
+        return scene;
     }
 
     /**
@@ -79,11 +84,10 @@ public class DashboardController {
         VBox sidebar = new VBox(10);
         sidebar.setPrefWidth(200);
         sidebar.setPadding(new Insets(20));
-        sidebar.setStyle("-fx-background-color: #1a2942;");
+        sidebar.getStyleClass().add("sidebar");
 
         Label appTitle = new Label("Portfolio Tracker");
-        appTitle.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        appTitle.setTextFill(Color.WHITE);
+        appTitle.getStyleClass().add("sidebar-title");
 
         Button dashboardBtn = createSidebarButton("Dashboard");
         Button transactionsBtn = createSidebarButton("Transactions");
@@ -98,6 +102,7 @@ public class DashboardController {
 
         Button logoutBtn = new Button("Logout");
         logoutBtn.setMaxWidth(Double.MAX_VALUE);
+        logoutBtn.getStyleClass().add("logout-button");
         logoutBtn.setOnAction(e -> handleLogout());
 
         Region spacer = new Region();
@@ -120,7 +125,7 @@ public class DashboardController {
     private Button createSidebarButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
+        btn.getStyleClass().add("sidebar-button");
         return btn;
     }
 
@@ -135,12 +140,12 @@ public class DashboardController {
         content.setPadding(new Insets(20));
 
         Label welcomeLabel = new Label("Welcome, " + currentUser.getUsername());
-        welcomeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        welcomeLabel.getStyleClass().add("title-label");
 
         HBox summaryCards = createSummaryCards();
 
         Label assetsLabel = new Label("Your Assets");
-        assetsLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        assetsLabel.getStyleClass().add("title-label");
 
         TableView<Holding> assetsTable = createAssetsTable();
 
@@ -162,12 +167,11 @@ public class DashboardController {
         BigDecimal totalInvested = portfolioService.getTotalInvested(currentUser.getId());
 
         VBox valueCard = createCard("Total Portfolio Value",
-                CurrencyUtils.formatCurrency(totalValue), "#000000");
+                CurrencyUtils.formatCurrency(totalValue), null);
         VBox plCard = createCard("Total Profit / Loss",
-                CurrencyUtils.formatCurrency(totalProfitLoss),
-                totalProfitLoss.compareTo(BigDecimal.ZERO) >= 0 ? "#00aa00" : "#cc0000");
+                CurrencyUtils.formatCurrency(totalProfitLoss), totalProfitLoss);
         VBox investedCard = createCard("Total Invested",
-                CurrencyUtils.formatCurrency(totalInvested), "#000000");
+                CurrencyUtils.formatCurrency(totalInvested), null);
 
         HBox cards = new HBox(20);
         cards.getChildren().addAll(valueCard, plCard, investedCard);
@@ -179,22 +183,27 @@ public class DashboardController {
      *
      * @param title      the card's heading label (e.g. "Total Portfolio Value")
      * @param value      the formatted value to display (e.g. "€12,345.00")
-     * @param valueColor the CSS-compatible colour string used for the value label
+     * @param rawValue   the raw value (e.g. 12345.00)
      * @return a styled {@link VBox} card
      */
-    private VBox createCard(String title, String value, String valueColor) {
+    private VBox createCard(String title, String value, BigDecimal rawValue) {
         VBox card = new VBox(10);
         card.setPadding(new Insets(20));
         card.setPrefWidth(250);
-        card.setStyle("-fx-background-color: #f5f5f5; " +
-                "-fx-border-radius: 8; -fx-background-radius: 8;");
+        card.getStyleClass().add("card");
 
         Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", 14));
+        titleLabel.getStyleClass().add("card-title");
 
         Label valueLabel = new Label(value);
-        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 22));
-        valueLabel.setStyle("-fx-text-fill: " + valueColor + ";");
+
+        if (rawValue == null || rawValue.compareTo(BigDecimal.ZERO) == 0) {
+            valueLabel.getStyleClass().add("card-value");
+        } else if (rawValue.compareTo(BigDecimal.ZERO) > 0) {
+            valueLabel.getStyleClass().add("card-value-positive");
+        } else {
+            valueLabel.getStyleClass().add("card-value-negative");
+        }
 
         card.getChildren().addAll(titleLabel, valueLabel);
         return card;
@@ -208,6 +217,7 @@ public class DashboardController {
      */
     private TableView<Holding> createAssetsTable() {
         TableView<Holding> table = new TableView<>();
+        table.getStyleClass().add("table-view");
 
         TableColumn<Holding, String> symbolCol = new TableColumn<>("Asset");
         symbolCol.setCellValueFactory(data ->
