@@ -51,8 +51,13 @@ public class PortfolioService {
             Holding holding = calculationService.calculateHolding(symbol, assetTransaction);
 
             // Get current price
-            BigDecimal currentPrice = marketDataService.getCurrentPrice(symbol);
-            holding.setCurrentPrice(currentPrice);
+            try {
+                BigDecimal currentPrice = marketDataService.getCurrentPrice(symbol);
+                holding.setCurrentPrice(currentPrice);
+            } catch (Exception e) {
+                // Αν το API αποτύχει, βάλε τιμή 0
+                holding.setCurrentPrice(BigDecimal.ZERO);
+            }
 
             if (holding.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
                 holdings.add(holding);
