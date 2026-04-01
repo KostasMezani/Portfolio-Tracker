@@ -54,9 +54,14 @@ public class PortfolioService {
             try {
                 BigDecimal currentPrice = marketDataService.getCurrentPrice(symbol);
                 holding.setCurrentPrice(currentPrice);
+
+                BigDecimal profitLoss = currentPrice.subtract(holding.getAvgPrice())
+                        .multiply(holding.getQuantity());
+                holding.setProfitLoss(profitLoss);
             } catch (Exception e) {
                 // Αν το API αποτύχει, βάλε τιμή 0
                 holding.setCurrentPrice(BigDecimal.ZERO);
+                holding.setProfitLoss(BigDecimal.ZERO);
             }
 
             if (holding.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
