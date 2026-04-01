@@ -64,10 +64,11 @@ public class CalculationService {
      */
     public BigDecimal calculateTotalInvested(List<Transaction> transactions){
         BigDecimal total = BigDecimal.ZERO;
-
-        for (Transaction t : transactions){
-            if (t.getType() == TransactionType.BUY){
+        for (Transaction t : transactions) {
+            if (t.getType() == TransactionType.BUY) {
                 total = total.add(t.getTotalAmount());
+            } else if (t.getType() == TransactionType.SELL) {
+                total = total.subtract(t.getTotalAmount());
             }
         }
         return total;
