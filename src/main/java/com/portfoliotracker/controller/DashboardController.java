@@ -1,9 +1,11 @@
 package com.portfoliotracker.controller;
 
 import com.portfoliotracker.model.Holding;
+import com.portfoliotracker.model.PriceAlert;
 import com.portfoliotracker.model.User;
 import com.portfoliotracker.service.*;
 import com.portfoliotracker.util.CurrencyUtils;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -12,6 +14,9 @@ import javafx.stage.Stage;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class DashboardController {
 
@@ -24,17 +29,10 @@ public class DashboardController {
     private final WatchlistService watchlistService;
     private final AlertService alertService;
 
+    private ScheduledExecutorService alertScheduler;
+
     /**
      * Constructs a DashboardController with the authenticated user and all required services.
-     *
-     * @param stage              the primary JavaFX stage used to switch scenes
-     * @param currentUser        the currently authenticated user
-     * @param portfolioService   service for portfolio value and holdings calculations
-     * @param authService        service responsible for authentication logic
-     * @param transactionService service for transaction-related operations
-     * @param marketDataService  service for fetching live market data
-     * @param watchlistService   service for watchlist management
-     * @param alertService       service for alert management
      */
     public DashboardController(Stage stage, User currentUser,
                                PortfolioService portfolioService,
@@ -60,9 +58,7 @@ public class DashboardController {
     }
 
     /**
-     * Builds and returns the dashboard {@link Scene} composed of a sidebar and main content area.
-     *
-     * @return the JavaFX Scene for the dashboard screen
+     * Builds and returns the dashboard {@link Scene}.
      */
     public Scene createScene() {
         BorderPane mainLayout = new BorderPane();
@@ -71,14 +67,62 @@ public class DashboardController {
 
         Scene scene = new Scene(mainLayout, 1100, 700);
         applyStylesheet(scene);
+
+        // Ξεκίνα τον alert checker
+        startAlertChecker();
+
+        // Σταμάτα τον scheduler όταν αλλάξει η σκηνή
+        stage.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != scene && alertScheduler != null && !alertScheduler.isShutdown()) {
+                alertScheduler.shutdown();
+            }
+        });
+
         return scene;
     }
 
     /**
-     * Creates the navigation sidebar containing buttons for all main application views
-     * and a logout button anchored at the bottom.
-     *
-     * @return a {@link VBox} representing the sidebar
+     * Starts the background alert checker that runs every 60 seconds.
+     */
+    private void startAlertChecker() {
+        alertScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true); // κλείνει αυτόματα με την εφαρμογή
+            return t;
+        });
+
+        alertScheduler.scheduleAtFixedRate(() -> {
+            try {
+                List<PriceAlert> triggered = alertService.checkAlerts(currentUser.getId());
+                if (!triggered.isEmpty()) {
+                    Platform.runLater(() -> showAlertNotifications(triggered));
+                }
+            } catch (Exception e) {
+                System.out.println("Alert check failed: " + e.getMessage());
+            }
+        }, 0, 60, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Shows a notification dialog for each triggered alert.
+     * @param triggered the list of triggered alerts
+     */
+    private void showAlertNotifications(List<PriceAlert> triggered) {
+        for (PriceAlert alert : triggered) {
+            Alert notification = new Alert(Alert.AlertType.INFORMATION);
+            notification.setTitle("🔔 Price Alert Triggered!");
+            notification.setHeaderText("Alert for " + alert.getAssetSymbol().toUpperCase());
+            notification.setContentText(
+                    alert.getAssetSymbol().toUpperCase() + " has gone " +
+                            alert.getCondition() + " " +
+                            CurrencyUtils.formatCurrency(alert.getTargetPrice()) + "!"
+            );
+            notification.showAndWait();
+        }
+    }
+
+    /**
+     * Creates the navigation sidebar.
      */
     private VBox createSidebar() {
         VBox sidebar = new VBox(10);
@@ -117,10 +161,7 @@ public class DashboardController {
     }
 
     /**
-     * Creates a styled sidebar navigation button that spans the full width of the sidebar.
-     *
-     * @param text the label text to display on the button
-     * @return a styled {@link Button} for use in the sidebar
+     * Creates a styled sidebar button.
      */
     private Button createSidebarButton(String text) {
         Button btn = new Button(text);
@@ -130,10 +171,7 @@ public class DashboardController {
     }
 
     /**
-     * Creates the main content area of the dashboard, including the welcome label,
-     * portfolio summary cards, and the assets table.
-     *
-     * @return a {@link VBox} containing the dashboard content
+     * Creates the main content area.
      */
     private VBox createContent() {
         VBox content = new VBox(20);
@@ -156,10 +194,7 @@ public class DashboardController {
     }
 
     /**
-     * Creates the row of summary cards showing total portfolio value, total profit/loss,
-     * and total amount invested.
-     *
-     * @return an {@link HBox} containing the three summary cards
+     * Creates the summary cards.
      */
     private HBox createSummaryCards() {
         BigDecimal totalValue = portfolioService.getPortfolioValue(currentUser.getId());
@@ -179,12 +214,7 @@ public class DashboardController {
     }
 
     /**
-     * Creates a single summary card displaying a title and a coloured value.
-     *
-     * @param title      the card's heading label (e.g. "Total Portfolio Value")
-     * @param value      the formatted value to display (e.g. "€12,345.00")
-     * @param rawValue   the raw value (e.g. 12345.00)
-     * @return a styled {@link VBox} card
+     * Creates a summary card.
      */
     private VBox createCard(String title, String value, BigDecimal rawValue) {
         VBox card = new VBox(10);
@@ -210,10 +240,7 @@ public class DashboardController {
     }
 
     /**
-     * Creates and populates the assets {@link TableView} with the current user's holdings,
-     * showing symbol, quantity, average buy price, current price, and profit/loss columns.
-     *
-     * @return a {@link TableView} populated with the user's holdings
+     * Creates the assets table.
      */
     private TableView<Holding> createAssetsTable() {
         TableView<Holding> table = new TableView<>();
@@ -254,10 +281,8 @@ public class DashboardController {
         return table;
     }
 
-    /**
-     * Navigates to the Transactions screen by replacing the current scene.
-     */
     private void navigateToTransactions() {
+        if (alertScheduler != null) alertScheduler.shutdown();
         TransactionsController controller = new TransactionsController(
                 stage, currentUser, transactionService, authService,
                 portfolioService, marketDataService, watchlistService, alertService
@@ -265,10 +290,8 @@ public class DashboardController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Add Transaction screen by replacing the current scene.
-     */
     private void navigateToAddTransaction() {
+        if (alertScheduler != null) alertScheduler.shutdown();
         AddTransactionController controller = new AddTransactionController(
                 stage, currentUser, transactionService, marketDataService,
                 authService, portfolioService, watchlistService, alertService
@@ -276,10 +299,8 @@ public class DashboardController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Holdings screen by replacing the current scene.
-     */
     private void navigateToHoldings() {
+        if (alertScheduler != null) alertScheduler.shutdown();
         HoldingsController controller = new HoldingsController(
                 stage, currentUser, portfolioService, authService,
                 transactionService, marketDataService, watchlistService, alertService
@@ -287,10 +308,8 @@ public class DashboardController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Navigates to the Watchlist screen by replacing the current scene.
-     */
     private void navigateToWatchlist() {
+        if (alertScheduler != null) alertScheduler.shutdown();
         WatchlistController controller = new WatchlistController(
                 stage, currentUser, watchlistService, marketDataService,
                 authService, portfolioService, transactionService, alertService
@@ -298,11 +317,8 @@ public class DashboardController {
         stage.setScene(controller.createScene());
     }
 
-    /**
-     * Handles the Logout button click event. Clears the current session and navigates
-     * back to the Login screen.
-     */
     private void handleLogout() {
+        if (alertScheduler != null) alertScheduler.shutdown();
         LoginController loginController = new LoginController(
                 stage, authService, portfolioService,
                 transactionService, marketDataService,
