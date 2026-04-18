@@ -1,5 +1,6 @@
 package com.portfoliotracker.controller;
 
+import com.portfoliotracker.model.AlertCondition;
 import com.portfoliotracker.model.PriceSnapshot;
 import com.portfoliotracker.model.User;
 import com.portfoliotracker.model.WatchlistItem;
@@ -11,7 +12,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public class WatchlistController {
 
@@ -78,22 +81,24 @@ public class WatchlistController {
         Label subtitleLabel = new Label("Track assets you are interested in");
         subtitleLabel.getStyleClass().add("subtitle-label");
 
+        // Dropdown αντί για TextField
         HBox addBar = new HBox(10);
-        TextField symbolField = new TextField();
-        symbolField.setPromptText("Enter asset symbol e.g. bitcoin");
-        symbolField.setPrefWidth(300);
+        ComboBox<String> symbolComboBox = new ComboBox<>();
+        symbolComboBox.getItems().addAll("bitcoin", "ethereum", "solana");
+        symbolComboBox.setPromptText("Select asset");
+        symbolComboBox.setPrefWidth(300);
 
         Button addBtn = new Button("Add to Watchlist");
         addBtn.getStyleClass().add("primary-button");
         addBtn.setOnAction(e -> {
-            String symbol = symbolField.getText().trim();
-            if (!symbol.isEmpty()) {
+            String symbol = symbolComboBox.getValue();
+            if (symbol != null) {
                 watchlistService.addToWatchlist(currentUser.getId(), symbol);
-                symbolField.clear();
+                symbolComboBox.setValue(null);
                 loadWatchlist();
             }
         });
-        addBar.getChildren().addAll(symbolField, addBtn);
+        addBar.getChildren().addAll(symbolComboBox, addBtn);
 
         watchlistTable = createWatchlistTable();
         loadWatchlist();
@@ -140,6 +145,25 @@ public class WatchlistController {
             }
         });
 
+        // Alert column
+        TableColumn<WatchlistItem, Void> alertCol = new TableColumn<>("Alert");
+        alertCol.setCellFactory(col -> new TableCell<>() {
+            private final Button alertBtn = new Button("Set Alert");
+            {
+                alertBtn.getStyleClass().add("primary-button");
+                alertBtn.setOnAction(e -> {
+                    WatchlistItem item = getTableView().getItems().get(getIndex());
+                    handleSetAlert(item);
+                });
+            }
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : alertBtn);
+            }
+        });
+
+        // Remove column
         TableColumn<WatchlistItem, Void> actionCol = new TableColumn<>("Action");
         actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button removeBtn = new Button("Remove");
@@ -159,8 +183,79 @@ public class WatchlistController {
             }
         });
 
-        table.getColumns().addAll(assetCol, priceCol, changeCol, actionCol);
+        table.getColumns().addAll(assetCol, priceCol, changeCol, alertCol, actionCol);
         return table;
+    }
+
+    /**
+     * Opens a dialog for the user to set a price alert for a watchlist item.
+     */
+    private void handleSetAlert(WatchlistItem item) {
+        // Dialog για να εισάγει ο χρήστης την τιμή στόχο
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Set Price Alert");
+        dialog.setHeaderText("Set alert for: " + item.getAssetSymbol());
+
+        // Condition dropdown
+        Label conditionLabel = new Label("Condition:");
+        ComboBox<String> conditionBox = new ComboBox<>();
+        conditionBox.getItems().addAll("ABOVE", "BELOW");
+        conditionBox.setValue("ABOVE");
+
+        // Target price field
+        Label priceLabel = new Label("Target Price (€):");
+        TextField targetPriceField = new TextField();
+        targetPriceField.setPromptText("e.g. 35000");
+
+        // Show current price as reference
+        Label currentPriceLabel = new Label();
+        try {
+            BigDecimal currentPrice = marketDataService.getCurrentPrice(item.getAssetSymbol());
+            currentPriceLabel.setText("Current price: " + CurrencyUtils.formatCurrency(currentPrice));
+        } catch (Exception e) {
+            currentPriceLabel.setText("Current price: N/A");
+        }
+
+        VBox dialogContent = new VBox(10);
+        dialogContent.setPadding(new Insets(20));
+        dialogContent.getChildren().addAll(
+                currentPriceLabel,
+                conditionLabel, conditionBox,
+                priceLabel, targetPriceField
+        );
+
+        dialog.getDialogPane().setContent(dialogContent);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            try {
+                BigDecimal targetPrice = new BigDecimal(targetPriceField.getText().trim());
+                AlertCondition condition = conditionBox.getValue().equals("ABOVE")
+                        ? AlertCondition.ABOVE
+                        : AlertCondition.BELOW;
+
+                alertService.createAlert(
+                        currentUser.getId(),
+                        item.getAssetSymbol(),
+                        condition,
+                        targetPrice
+                );
+
+                // Confirmation message
+                Alert confirmation = new Alert(Alert.AlertType.INFORMATION);
+                confirmation.setTitle("Alert Created");
+                confirmation.setContentText("Alert set for " + item.getAssetSymbol() +
+                        " " + condition + " " + CurrencyUtils.formatCurrency(targetPrice));
+                confirmation.showAndWait();
+
+            } catch (NumberFormatException e) {
+                Alert error = new Alert(Alert.AlertType.ERROR);
+                error.setTitle("Invalid Input");
+                error.setContentText("Please enter a valid price");
+                error.showAndWait();
+            }
+        }
     }
 
     /**
